@@ -127,7 +127,7 @@ public:
             // waiting for a new SLIP_END byte
             if(SLIP_END == byte) {
                 // time to start parsing the frame
-                m_SLIP_ESCape = false;
+                m_escape = false;
                 m_parsing = true;
 
                 // reset the buffer
@@ -146,22 +146,22 @@ public:
                 m_parsing = false;
                 return &m_buff;
             case SLIP_ESC:
-                m_SLIP_ESCape = true;
+                m_escape = true;
                 return NULL;
             case SLIP_ESC_END:
-                if(m_SLIP_ESCape) {
+                if(m_escape) {
                     // the SLIP_END byte was SLIP_ESCaped and should be included in the data
                     push = SLIP_END;
                 }
             case SLIP_ESC_ESC:
-                if(m_SLIP_ESCape) {
+                if(m_escape) {
                     // the SLIP_ESC byte was SLIP_ESCaped and should be included in the data
                     push = SLIP_ESC;
                 }
             }
 
         // never an SLIP_ESCape if made it here
-        m_SLIP_ESCape = false;
+        m_escape = false;
 
         // check if we can fit the byte
         if(m_buff.len == m_size) {
@@ -182,13 +182,13 @@ protected:
     UnallocatedSLIPDecoder(uint8_t* buffer, size_t len) : m_buff{buffer, 0},
                                                           m_size(len),
                                                           m_parsing(false),
-                                                          m_SLIP_ESCape(false) {};
+                                                          m_escape(false) {};
 private:
     slip_buffer_t m_buff;
     size_t m_size;
 
     bool m_parsing;
-    bool m_SLIP_ESCape;
+    bool m_escape;
 };
 
 /// @tparam SIZE    the maximum size of an output data buffer

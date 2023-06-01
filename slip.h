@@ -35,11 +35,11 @@ public:
         // index in frame.data
         size_t i = 0;
 
-        // start every frame with a frame SLIP_END
+        // start every frame with a frame end
         // while redundant as the last frame should have sent it, we want to make
         // sure this frame is delineated
         //
-        // if you really need that one extra byte, don't start with a frame SLIP_END
+        // if you really need that one extra byte, don't start with a frame end
         m_buff.data[i++] = SLIP_END;
 
         // copy the bytes from 'in'
@@ -68,15 +68,15 @@ public:
 
         // if we completely filled the output frame, it's possible we wrote
         // one too many bytes
-        // if the last byte in 'in' was SLIP_END or SLIP_ESC.
         //
-        // fix the buffer if this is the case
+        // if the last byte in 'in' was SLIP_ESC we squeezed in two bytes when
+        // we only had room for one, now we can't fit the frame end
         if(i > 1 && i == m_size - 1) {
             if(m_buff.data[i - 1] == SLIP_ESC) {
                 // we couldn't squeeze in the last byte :(
                 return NULL;
             }
-        } // if i = 1 we've only written the first SLIP_ESCape
+        } // if i = 1 we've only written the first frame end
 
         // add the last frame SLIP_END
         m_buff.data[i++] = SLIP_END;
@@ -118,11 +118,11 @@ public:
     ///
     ///         if a frame is too large to fit, it will be completely discarded
     slip_buffer_t* push(uint8_t byte) {
-        // NOTE: we wait for a frame SLIP_END before parsing a new frame
+        // NOTE: we wait for a frame end before parsing a new frame
         //       this could result in missing the first partial frame which is fine
         //
         //       but it also means the first frame encoded should start with a
-        //       frame SLIP_END or it will get ignored
+        //       frame end or it will get ignored
         if(!m_parsing) {
             // waiting for a new SLIP_END byte
             if(SLIP_END == byte) {
@@ -142,7 +142,7 @@ public:
 
         switch(byte) {
             case SLIP_END:
-                // SLIP_END of the frame
+                // end of the frame
                 m_parsing = false;
                 return &m_buff;
             case SLIP_ESC:
@@ -150,17 +150,17 @@ public:
                 return NULL;
             case SLIP_ESC_END:
                 if(m_escape) {
-                    // the SLIP_END byte was SLIP_ESCaped and should be included in the data
+                    // the SLIP_END byte was escaped and should be included in the data
                     push = SLIP_END;
                 }
             case SLIP_ESC_ESC:
                 if(m_escape) {
-                    // the SLIP_ESC byte was SLIP_ESCaped and should be included in the data
+                    // the SLIP_ESC byte was escaped and should be included in the data
                     push = SLIP_ESC;
                 }
             }
 
-        // never an SLIP_ESCape if made it here
+        // never an escape if made it here
         m_escape = false;
 
         // check if we can fit the byte

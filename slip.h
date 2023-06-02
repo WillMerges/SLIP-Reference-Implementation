@@ -85,6 +85,15 @@ public:
         return &m_buff;
     }
 
+    /// @brief encode an object into SLIP frame
+    /// @tparam TYPE    the type of object encode
+    /// @param data     the data to encode
+    /// @return the encoded SLIP frame, or NULL on error
+    template <typename TYPE>
+    slip_buffer_t* encode(TYPE* data) {
+        return encode((uint8_t*)data, sizeof(TYPE));
+    }
+
 protected:
     /// @brief protected constructor
     UnallocatedSLIPEncoder(uint8_t* buffer, size_t len) : m_buff{buffer, len},

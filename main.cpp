@@ -72,4 +72,53 @@ int main() {
         }
     }
     printf("\n");
+
+    // encode an entire struct
+    typedef struct {
+        int a;
+        int b;
+        bool c;
+    } test_t;
+
+    test_t test_dat = {1, 2, true};
+    encoded = encoder.encode<test_t>(&test_dat);
+
+    if(NULL == encoded) {
+        printf("failed to encode struct\n");
+        exit(-1);
+    }
+
+    // first push some garbage data
+    uint8_t garbage[5] = {0x1, 0x2, 0x3, 0x4, 0x5};
+    for(size_t i = 0; i < 5; i++) {
+        decoded = decoder.push(garbage[i]);
+
+        if(NULL != decoded) {
+            printf("decoded frame when shouldn't have\n");
+            exit(-1);
+        }
+    }
+
+    // now push the actual encoded frame
+    for(size_t i = 0; i < encoded->len; i++) {
+        decoded = decoder.push(encoded->data[i]);
+
+        if(i < encoded->len - 1 && NULL != decoded) {
+            printf("decoded frame too early\n");
+            break;
+        }
+    }
+
+    if(sizeof(test_t) != decoded->len) {
+        printf("decoded struct size is incorrect\n");
+        exit(-1);
+    }
+
+    test_t* ptr = (test_t*)decoded->data;
+    if(ptr->a != 1 || ptr->b != 2 || ptr->c != true) {
+        printf("decoded struct data is incorrect\n");
+        exit(-1);
+    }
+
+    printf("done\n");
 }
